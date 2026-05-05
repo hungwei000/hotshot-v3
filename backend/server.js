@@ -12,6 +12,11 @@ const ODDS_API_KEY = process.env.ODDS_API_KEY || "";
 const ODDS_API_BASE_URL = process.env.ODDS_API_BASE_URL || "https://api.the-odds-api.com";
 const SCORE_SYNC_INTERVAL_MS = Number(process.env.SCORE_SYNC_INTERVAL_MS || 10 * 60 * 1000);
 const ODDS_SYNC_INTERVAL_MS = Number(process.env.ODDS_SYNC_INTERVAL_MS || 10 * 60 * 1000);
+const LIVE_WINDOW_MS = {
+  nba: 3 * 60 * 60 * 1000,
+  nhl: 3 * 60 * 60 * 1000,
+  mlb: 4 * 60 * 60 * 1000,
+};
 
 const ODDS_API_SPORT_KEYS = {
   nba: "basketball_nba",
@@ -152,6 +157,15 @@ function publicUser(row) {
   };
 }
 
+function effectiveGameStatus(row) {
+  if (row.status !== "upcoming") return row.status;
+  const startsAt = new Date(row.starts_at).getTime();
+  const liveWindow = LIVE_WINDOW_MS[row.sport] || 3 * 60 * 60 * 1000;
+  const now = Date.now();
+  if (now >= startsAt && now <= startsAt + liveWindow) return "live";
+  return row.status;
+}
+
 function gameFromRow(row) {
   return {
     id: row.id,
@@ -159,7 +173,7 @@ function gameFromRow(row) {
     away: row.away,
     home: row.home,
     startsAt: row.starts_at,
-    status: row.status,
+    status: effectiveGameStatus(row),
     awayOdds: Number(row.away_odds),
     homeOdds: Number(row.home_odds),
     ou: row.ou === null ? null : Number(row.ou),

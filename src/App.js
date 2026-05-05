@@ -284,9 +284,18 @@ const formatRelativeLabel = (dateValue) => {
 
 const isResolvedGame = (game) => game.status === "final";
 
+const isLiveGame = (game) => {
+  if (game.status === "live") return true;
+  if (isResolvedGame(game) || game.bettingLocked) return false;
+  const startsAt = new Date(game.startsAt).getTime();
+  const liveWindow = game.sport === "mlb" ? 4 * 60 * 60 * 1000 : 3 * 60 * 60 * 1000;
+  const now = Date.now();
+  return now >= startsAt && now <= startsAt + liveWindow;
+};
+
 const isBettableGame = (game) => {
   const distance = daysUntil(game.startsAt);
-  return !game.bettingLocked && !isResolvedGame(game) && distance >= 0 && distance <= BETTING_WINDOW_DAYS;
+  return !game.bettingLocked && !isResolvedGame(game) && (isLiveGame(game) || (distance >= 0 && distance <= BETTING_WINDOW_DAYS));
 };
 
 const buildTeamLookup = () => {
@@ -549,7 +558,7 @@ function createInitialMarkets(groups) {
     const finalPrice = game.outcomeTeam ? (game.outcomeTeam === game.home ? 0.99 : 0.01) : null;
     const priceHistory = Array.from({ length: 24 }, (_, index) => {
       const movement = Math.sin(index / 3 + seededNumber(`${game.id}-phase`, 0, 3)) * 0.018;
-      const liveLift = game.status === "live" ? index * 0.0012 : 0;
+      const liveLift = isLiveGame(game) ? index * 0.0012 : 0;
       const resolvedDrift = finalPrice === null ? 0 : (finalPrice - baseline) * (index / 23);
       const price = clamp(baseline + movement + liveLift + resolvedDrift, 0.01, 0.99);
       return { t: index, p: Number(price.toFixed(2)) };
@@ -569,7 +578,7 @@ function createInitialMarkets(groups) {
 }
 
 function genCommunityMsg(groups) {
-  const pool = allGames(groups).filter((game) => game.status === "live" || isBettableGame(game));
+  const pool = allGames(groups).filter((game) => isLiveGame(game) || isBettableGame(game));
   if (!pool.length) return null;
 
   const game = pool[Math.floor(Math.random() * pool.length)];
@@ -857,7 +866,7 @@ function MoneylineMarketChart({ game, market, bet }) {
 
       <div style={{ display: "flex", justifyContent: "space-between", marginTop: 8, color: "#8da2bd", fontSize: 10 }}>
         <span>{market.resolvedAt ? `Winner: ${TEAM_LOOKUP[market.outcomeTeam].short}` : "Market live"}</span>
-        <span>{market.resolveAt ? "Resolution sequence running" : game.status === "live" ? "Live flow" : "Preview line"}</span>
+        <span>{market.resolveAt ? "Resolution sequence running" : isLiveGame(game) ? "Live flow" : "Preview line"}</span>
       </div>
     </div>
   );
@@ -902,18 +911,19 @@ function GameCard({ game, market, bet, onBet, selected, onSelect }) {
   const homeTeam = TEAM_LOOKUP[game.home];
   const awayTeam = TEAM_LOOKUP[game.away];
   const resolved = isResolvedGame(game) || Boolean(market?.resolvedAt);
+  const live = isLiveGame(game);
   const betOpen = isBettableGame(game) && !resolved;
   const locked = Boolean(bet);
   const statusLabel = resolved
     ? `RESOLVED · ${formatGameDate(game.startsAt)}`
-    : game.status === "live"
+    : live
       ? `LIVE · ${game.clock}`
       : `${formatRelativeLabel(game.startsAt)} · ${formatGameDate(game.startsAt)} · ${formatGameTime(game.startsAt)}`;
   const helperText = resolved
     ? "Market is resolved already, so no new bets can be placed"
     : game.bettingLocked
       ? "Visible for scouting; betting opens after the earlier games settle"
-    : game.status === "live"
+    : live
       ? "Betting is live"
       : betOpen
         ? "Open for pregame bets"
@@ -940,7 +950,7 @@ function GameCard({ game, market, bet, onBet, selected, onSelect }) {
     >
       <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "flex-start", marginBottom: 14 }}>
         <div>
-          <div style={{ color: resolved ? "#4ade80" : game.status === "live" ? "#fb7185" : "#9db5cf", fontSize: 11, fontWeight: 800, letterSpacing: 1, textTransform: "uppercase" }}>
+          <div style={{ color: resolved ? "#4ade80" : live ? "#fb7185" : "#9db5cf", fontSize: 11, fontWeight: 800, letterSpacing: 1, textTransform: "uppercase" }}>
             {statusLabel}
           </div>
           <div style={{ color: "#f5f7fb", fontSize: 14, fontWeight: 800, marginTop: 4 }}>
@@ -998,7 +1008,7 @@ function GameCard({ game, market, bet, onBet, selected, onSelect }) {
         >
           <TeamBadge team={awayTeam} size={54} />
           <div style={{ color: "#fff", fontSize: 14, fontWeight: 800 }}>{awayTeam.short}</div>
-          {(game.status === "live" || resolved) && game.score && <div style={{ color: "#dce7f6", fontSize: 26, fontWeight: 900 }}>{game.score.away}</div>}
+          {(live || resolved) && game.score && <div style={{ color: "#dce7f6", fontSize: 26, fontWeight: 900 }}>{game.score.away}</div>}
           <div style={{ color: awayTeam.colors[0], fontSize: 15, fontWeight: 900 }}>{formatOdds(game.awayOdds)}</div>
         </button>
 
@@ -1025,7 +1035,7 @@ function GameCard({ game, market, bet, onBet, selected, onSelect }) {
         >
           <TeamBadge team={homeTeam} size={54} />
           <div style={{ color: "#fff", fontSize: 14, fontWeight: 800 }}>{homeTeam.short}</div>
-          {(game.status === "live" || resolved) && game.score && <div style={{ color: "#dce7f6", fontSize: 26, fontWeight: 900 }}>{game.score.home}</div>}
+          {(live || resolved) && game.score && <div style={{ color: "#dce7f6", fontSize: 26, fontWeight: 900 }}>{game.score.home}</div>}
           <div style={{ color: homeTeam.colors[0], fontSize: 15, fontWeight: 900 }}>{formatOdds(game.homeOdds)}</div>
         </button>
       </div>
@@ -1328,7 +1338,7 @@ function Spotlight({ game, query, onClearQuery, onSelectGame }) {
   const awayTeam = TEAM_LOOKUP[game.away];
   const dateLabel = isResolvedGame(game)
     ? `Resolved · ${formatGameDate(game.startsAt)}`
-    : game.status === "live"
+    : isLiveGame(game)
       ? `Live now · ${game.clock}`
       : `${formatGameDate(game.startsAt)} · ${formatGameTime(game.startsAt)}`;
 
@@ -2067,7 +2077,7 @@ export default function App() {
           const market = current[game.id];
           if (!market || market.resolvedAt) return;
 
-          const shouldAnimate = game.status === "live" || Boolean(market.resolveAt);
+          const shouldAnimate = isLiveGame(game) || Boolean(market.resolveAt);
           if (!shouldAnimate) return;
 
           const tick = (market.tick || 0) + 1;
@@ -2094,7 +2104,7 @@ export default function App() {
             }
           } else {
             const baseline = americanToProbability(game.homeOdds);
-            const volatility = game.status === "live" ? 0.045 : 0.015;
+            const volatility = isLiveGame(game) ? 0.045 : 0.015;
             price = clamp(price + seededNumber(`${game.id}-${tick}`, -volatility, volatility) + (baseline - price) * 0.06, 0.12, 0.88);
           }
 
@@ -2211,9 +2221,9 @@ export default function App() {
   }, [selectedGame, markets]);
 
   const resolvedGames = filteredGames.filter((game) => isResolvedGame(game) || markets[game.id]?.resolvedAt);
-  const liveGames = filteredGames.filter((game) => game.status === "live" && !resolvedGames.includes(game));
-  const nearGames = filteredGames.filter((game) => game.status !== "live" && !resolvedGames.includes(game) && isBettableGame(game));
-  const laterGames = filteredGames.filter((game) => game.status !== "live" && !resolvedGames.includes(game) && !isBettableGame(game));
+  const liveGames = filteredGames.filter((game) => isLiveGame(game) && !resolvedGames.includes(game));
+  const nearGames = filteredGames.filter((game) => !isLiveGame(game) && !resolvedGames.includes(game) && isBettableGame(game));
+  const laterGames = filteredGames.filter((game) => !isLiveGame(game) && !resolvedGames.includes(game) && !isBettableGame(game));
   const placedGameIds = new Set([
     ...bets.map((bet) => bet.gameId),
     ...parlays.flatMap((parlay) => (parlay.legs || []).map((leg) => leg.gid || leg.gameId)),
