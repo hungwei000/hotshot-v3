@@ -2,6 +2,7 @@ services:
   - type: web
     name: hotshot-v3
     runtime: node
+    plan: free
     buildCommand: npm install && npm run build
     startCommand: npm start
     envVars:
@@ -20,5 +21,6 @@ services:
 
 databases:
   - name: hotshot-db
+    plan: free
     databaseName: hotshot
     user: hotshot
