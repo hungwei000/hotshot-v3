@@ -32,8 +32,8 @@ CREATE TABLE public.bets (
     game_id text NOT NULL,
     selected_team_id text NOT NULL,
     odds integer NOT NULL,
-    wager integer NOT NULL,
-    potential_win integer NOT NULL,
+    wager bigint NOT NULL,
+    potential_win bigint NOT NULL,
     result text,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
     settled_at timestamp with time zone,
@@ -87,8 +87,8 @@ CREATE TABLE public.parlay_legs (
 CREATE TABLE public.parlays (
     id text NOT NULL,
     user_id text NOT NULL,
-    wager integer NOT NULL,
-    potential_win integer DEFAULT 0 NOT NULL,
+    wager bigint NOT NULL,
+    potential_win bigint DEFAULT 0 NOT NULL,
     result text,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
     settled_at timestamp with time zone,
@@ -138,7 +138,7 @@ CREATE TABLE public.users (
     id text NOT NULL,
     username text NOT NULL,
     password_hash text NOT NULL,
-    points integer DEFAULT 1000 NOT NULL,
+    points bigint DEFAULT 1000 NOT NULL,
     wins integer DEFAULT 0 NOT NULL,
     losses integer DEFAULT 0 NOT NULL,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
@@ -342,4 +342,3 @@ ALTER TABLE ONLY public.teams
 --
 
 \unrestrict AdeIt5B4LBtVdOoibNwrzJRpftNFYszCxXUBqnRp89Cs8uXCXRs1uzeW1oLIVQV
-

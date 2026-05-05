@@ -309,7 +309,7 @@ async function initDatabase() {
       id TEXT PRIMARY KEY,
       username TEXT NOT NULL UNIQUE,
       password_hash TEXT NOT NULL,
-      points INTEGER NOT NULL DEFAULT 1000,
+      points BIGINT NOT NULL DEFAULT 1000,
       wins INTEGER NOT NULL DEFAULT 0,
       losses INTEGER NOT NULL DEFAULT 0,
       depleted_at TIMESTAMPTZ,
@@ -317,6 +317,7 @@ async function initDatabase() {
     );
 
     ALTER TABLE users ADD COLUMN IF NOT EXISTS depleted_at TIMESTAMPTZ;
+    ALTER TABLE users ALTER COLUMN points TYPE BIGINT;
     CREATE UNIQUE INDEX IF NOT EXISTS users_username_lower_unique ON users (lower(username));
 
     CREATE TABLE IF NOT EXISTS sessions (
@@ -331,8 +332,8 @@ async function initDatabase() {
       game_id TEXT NOT NULL REFERENCES games(id),
       selected_team_id TEXT NOT NULL REFERENCES teams(id),
       odds INTEGER NOT NULL,
-      wager INTEGER NOT NULL,
-      potential_win INTEGER NOT NULL,
+      wager BIGINT NOT NULL,
+      potential_win BIGINT NOT NULL,
       result TEXT CHECK (result IN ('win', 'loss')),
       created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
       settled_at TIMESTAMPTZ
@@ -341,8 +342,8 @@ async function initDatabase() {
     CREATE TABLE IF NOT EXISTS parlays (
       id TEXT PRIMARY KEY,
       user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-      wager INTEGER NOT NULL,
-      potential_win INTEGER NOT NULL DEFAULT 0,
+      wager BIGINT NOT NULL,
+      potential_win BIGINT NOT NULL DEFAULT 0,
       result TEXT CHECK (result IN ('win', 'loss')),
       created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
       settled_at TIMESTAMPTZ
@@ -356,6 +357,11 @@ async function initDatabase() {
       odds INTEGER NOT NULL,
       result TEXT CHECK (result IN ('win', 'loss'))
     );
+
+    ALTER TABLE bets ALTER COLUMN wager TYPE BIGINT;
+    ALTER TABLE bets ALTER COLUMN potential_win TYPE BIGINT;
+    ALTER TABLE parlays ALTER COLUMN wager TYPE BIGINT;
+    ALTER TABLE parlays ALTER COLUMN potential_win TYPE BIGINT;
   `);
 
   await seedDatabase();

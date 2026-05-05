@@ -32,7 +32,7 @@ CREATE TABLE IF NOT EXISTS users (
   id TEXT PRIMARY KEY,
   username TEXT NOT NULL UNIQUE,
   password_hash TEXT NOT NULL,
-  points INTEGER NOT NULL DEFAULT 1000,
+  points BIGINT NOT NULL DEFAULT 1000,
   wins INTEGER NOT NULL DEFAULT 0,
   losses INTEGER NOT NULL DEFAULT 0,
   created_at TIMESTAMPTZ NOT NULL DEFAULT now()
@@ -50,8 +50,8 @@ CREATE TABLE IF NOT EXISTS bets (
   game_id TEXT NOT NULL REFERENCES games(id),
   selected_team_id TEXT NOT NULL REFERENCES teams(id),
   odds INTEGER NOT NULL,
-  wager INTEGER NOT NULL,
-  potential_win INTEGER NOT NULL,
+  wager BIGINT NOT NULL,
+  potential_win BIGINT NOT NULL,
   result TEXT CHECK (result IN ('win', 'loss')),
   created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   settled_at TIMESTAMPTZ
@@ -60,8 +60,8 @@ CREATE TABLE IF NOT EXISTS bets (
 CREATE TABLE IF NOT EXISTS parlays (
   id TEXT PRIMARY KEY,
   user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-  wager INTEGER NOT NULL,
-  potential_win INTEGER NOT NULL DEFAULT 0,
+  wager BIGINT NOT NULL,
+  potential_win BIGINT NOT NULL DEFAULT 0,
   result TEXT CHECK (result IN ('win', 'loss')),
   created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   settled_at TIMESTAMPTZ
