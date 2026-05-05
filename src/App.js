@@ -288,7 +288,7 @@ const isLiveGame = (game) => {
   if (game.status === "live") return true;
   if (isResolvedGame(game) || game.bettingLocked) return false;
   const startsAt = new Date(game.startsAt).getTime();
-  const liveWindow = game.sport === "mlb" ? 4 * 60 * 60 * 1000 : 3 * 60 * 60 * 1000;
+  const liveWindow = 6 * 60 * 60 * 1000;
   const now = Date.now();
   return now >= startsAt && now <= startsAt + liveWindow;
 };

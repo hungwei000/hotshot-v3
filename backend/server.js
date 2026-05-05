@@ -13,9 +13,9 @@ const ODDS_API_BASE_URL = process.env.ODDS_API_BASE_URL || "https://api.the-odds
 const SCORE_SYNC_INTERVAL_MS = Number(process.env.SCORE_SYNC_INTERVAL_MS || 10 * 60 * 1000);
 const ODDS_SYNC_INTERVAL_MS = Number(process.env.ODDS_SYNC_INTERVAL_MS || 10 * 60 * 1000);
 const LIVE_WINDOW_MS = {
-  nba: 3 * 60 * 60 * 1000,
-  nhl: 3 * 60 * 60 * 1000,
-  mlb: 4 * 60 * 60 * 1000,
+  nba: 6 * 60 * 60 * 1000,
+  nhl: 6 * 60 * 60 * 1000,
+  mlb: 6 * 60 * 60 * 1000,
 };
 
 const ODDS_API_SPORT_KEYS = {
